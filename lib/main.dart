@@ -1,20 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/expense_provider.dart';
-import 'services/auth_service.dart';
-import 'screens/main_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (context) => ExpenseProvider()),
-        Provider<AuthService>(create: (_) => AuthService()),
-      ],
+    ChangeNotifierProvider(
+      create: (context) => ExpenseProvider(),
       child: const MyApp(),
     ),
   );
@@ -30,11 +24,12 @@ class MyApp extends StatelessWidget {
       title: 'Pocket Sense',
       theme: ThemeData(
         brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF020502),
+        fontFamily: 'Sans',
         useMaterial3: true,
         colorSchemeSeed: const Color(0xFFF6B000),
       ),
-
-      home: const MainScreen(),
+      home: const LoginScreen(),
     );
   }
 }

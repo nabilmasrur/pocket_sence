@@ -1,79 +1,105 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import '../services/auth_service.dart';
+import '../widgets/auth_widgets.dart';
+import 'signup_screen.dart';
+import 'main_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context);
+  State<LoginScreen> createState() => _LoginScreenState();
+}
 
+class _LoginScreenState extends State<LoginScreen> {
+  bool _obscurePassword = true;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF020807),
-      body: Stack(
-        children: [
-          // Background Glows
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [const Color(0xFFF6B000).withOpacity(0.1), Colors.transparent],
+      body: GlowBackground(
+        color1: const Color(0xFFFACC15), // Yellow
+        color2: const Color(0xFF10B981), // Emerald
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              // Logo
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D110D),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF27272A)),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFFFACC15).withOpacity(0.1), blurRadius: 20)
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: const Text('💰', style: TextStyle(fontSize: 32)),
+              ),
+              const SizedBox(height: 24),
+              const Text('Welcome\nBack!', style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, height: 1.1, color: Colors.white)),
+              const SizedBox(height: 8),
+              Text('Sign in to manage your finances seamlessly.', style: TextStyle(color: Colors.grey[500])),
+              
+              const SizedBox(height: 32),
+              
+              buildLabel('EMAIL ADDRESS'),
+              buildTextField(hint: 'nabil@example.com', icon: Icons.mail_outline),
+              const SizedBox(height: 20),
+              
+              buildLabel('PASSWORD'),
+              buildTextField(
+                hint: '••••••••', 
+                icon: Icons.lock_outline, 
+                isPassword: true, 
+                obscureText: _obscurePassword,
+                onToggle: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+              
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {},
+                  child: const Text('Forgot Password?', style: TextStyle(color: Color(0xFFFACC15), fontWeight: FontWeight.bold)),
                 ),
               ),
-            ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: Column(
+              
+              const SizedBox(height: 20),
+              buildPrimaryButton('Sign In', Icons.arrow_forward, () {
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
+              }),
+              
+              const SizedBox(height: 24),
+              buildDivider('OR CONTINUE WITH'),
+              const SizedBox(height: 24),
+              
+              Row(
+                children: [
+                  Expanded(child: buildGoogleButton()),
+                  const SizedBox(width: 16),
+                  Expanded(child: buildBiometricButton()),
+                ],
+              ),
+              
+              const SizedBox(height: 32),
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.account_balance_wallet_rounded, size: 80, color: Color(0xFFF6B000)),
-                  const SizedBox(height: 24),
-                  Text(
-                    "Pocket Sense",
-                    style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Track your expenses elegantly",
-                    style: GoogleFonts.outfit(fontSize: 16, color: Colors.white.withOpacity(0.5)),
-                  ),
-                  const SizedBox(height: 60),
-                  
-                  // Google Sign In Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onPressed: () async {
-                        final user = await authService.signInWithGoogle();
-                        if (user == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Login Failed")),
-                          );
-                        }
-                      },
-                      icon: Image.network('https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png', height: 24),
-                      label: Text("Sign in with Google", style: GoogleFonts.outfit(color: Colors.white, fontSize: 16)),
-                    ),
+                  Text("Don't have an account? ", style: TextStyle(color: Colors.grey[500])),
+                  GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignUpScreen())),
+                    child: const Text('Sign Up', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
