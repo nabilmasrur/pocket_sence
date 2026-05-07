@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.11.5
+  sdk: ^3.11.1
 
 dependencies:
   flutter:
@@ -17,12 +17,17 @@ dependencies:
   firebase_auth: ^5.1.2
   cloud_firestore: ^5.0.2
   google_sign_in: ^6.2.1
+  intl: ^0.20.2
   local_auth: ^2.2.0
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+
+dependency_overrides:
+  path_provider_foundation: 2.5.1
 
 flutter:
   uses-material-design: true
