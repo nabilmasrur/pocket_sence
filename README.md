@@ -56,6 +56,3 @@
 
 ## 🤝 Contributing
 Contributions, issues and feature requests are welcome! Feel free to check [issues page](https://github.com/nabilmasrur/pocket_sence/issues).
-
-## 📝 License
-This project is [MIT](LICENSE) licensed.
