@@ -15,7 +15,6 @@
 - 📊 **Beautiful Statistics**: Visualize your monthly spending trends with interactive, dynamic charts.
 - 📅 **Visual Records**: View all past expenses cleanly with an in-app interactive calendar.
 - ☁️ **Cloud Sync & Receipts**: Upload physical receipt vouchers instantly to Cloudinary.
-- 🔒 **Biometric Security**: Protect your financial data with FaceID/Fingerprint local authentication.
 - 🔔 **Smart Reminders**: Schedule daily push notifications so you never forget to log expenses.
 - 🎨 **Sleek UI**: Premium dark mode experience with glassmorphism designs and smooth micro-animations.
 
