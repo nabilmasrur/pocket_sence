@@ -1,17 +1,62 @@
-# pocket_sence
+<div align="center">
+  <img src="assets/icon.png" width="120" alt="Pocket Sense Logo">
+  <h1>Pocket Sense</h1>
+  <p><strong>A sleek, fast, and secure expense tracker that gives you total control over your budget.</strong></p>
+  
+  [![Flutter](https://img.shields.io/badge/Made_with-Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev/)
+  [![Firebase](https://img.shields.io/badge/Powered_by-Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
+  [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+</div>
 
-A new Flutter project.
+<br/>
 
-## Getting Started
+## 🚀 Features
+- 💸 **Smart Budgeting**: Set daily, weekly, and monthly limits. Get warned before you overspend.
+- 📊 **Beautiful Statistics**: Visualize your monthly spending trends with interactive, dynamic charts.
+- 📅 **Visual Records**: View all past expenses cleanly with an in-app interactive calendar.
+- ☁️ **Cloud Sync & Receipts**: Upload physical receipt vouchers instantly to Cloudinary.
+- 🔒 **Biometric Security**: Protect your financial data with FaceID/Fingerprint local authentication.
+- 🔔 **Smart Reminders**: Schedule daily push notifications so you never forget to log expenses.
+- 🎨 **Sleek UI**: Premium dark mode experience with glassmorphism designs and smooth micro-animations.
 
-This project is a starting point for a Flutter application.
+## 🛠️ Tech Stack
+- **Framework:** Flutter (Dart)
+- **Backend:** Firebase Authentication
+- **Local Storage:** SharedPreferences
+- **Media Hosting:** Cloudinary
+- **State Management:** Provider
+- **Charts:** fl_chart
+- **Local Auth:** local_auth
 
-A few resources to get you started if this is your first Flutter project:
+## 📸 Screenshots
+*(Add screenshots of your application here)*
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## 📦 Getting Started
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Prerequisites
+- Flutter SDK (>=3.0.0)
+- Firebase Project setup
+
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/nabilmasrur/pocket_sence.git
+   ```
+2. Navigate to the project directory:
+   ```bash
+   cd pocket_sence
+   ```
+3. Install dependencies:
+   ```bash
+   flutter pub get
+   ```
+4. Run the app:
+   ```bash
+   flutter run
+   ```
+
+## 🤝 Contributing
+Contributions, issues and feature requests are welcome! Feel free to check [issues page](https://github.com/nabilmasrur/pocket_sence/issues).
+
+## 📝 License
+This project is [MIT](LICENSE) licensed.

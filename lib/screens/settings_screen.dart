@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:table_calendar/table_calendar.dart';
 
+import '../core/app_colors.dart';
 import '../providers/expense_provider.dart';
 import '../services/auth_service.dart';
 
@@ -20,10 +22,10 @@ class SettingsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Settings',
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.text(context),
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
               ),
@@ -37,7 +39,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 14),
             _alarmCard(context, provider),
             const SizedBox(height: 14),
-            _themeCard(provider),
+            _themeCard(context, provider),
           ],
         ),
       ),
@@ -51,47 +53,66 @@ class SettingsScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              const CircleAvatar(
-                radius: 26,
-                backgroundColor: _gold,
-                child: Text(
-                  'N',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 20,
-                  ),
-                ),
+              FutureBuilder<AppUserProfile>(
+                future: AuthService().currentProfile(),
+                builder: (context, snapshot) {
+                  final name = snapshot.data?.name.trim().isNotEmpty == true
+                      ? snapshot.data!.name
+                      : 'Pocket Sense User';
+                  return CircleAvatar(
+                    radius: 26,
+                    backgroundColor: _gold,
+                    backgroundImage: snapshot.data?.photoUrl == null
+                        ? null
+                        : NetworkImage(snapshot.data!.photoUrl!),
+                    child: snapshot.data?.photoUrl == null
+                        ? Text(
+                            name.characters.first.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 20,
+                            ),
+                          )
+                        : null,
+                  );
+                },
               ),
               const SizedBox(width: 14),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Abu Nabil Md. Masrur',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    Text(
-                      'BAUST | ID: 0802410405101077',
-                      style: TextStyle(color: Colors.white54, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _showPasswordSheet(context),
-                  icon: const Icon(Icons.lock_reset_rounded),
-                  label: const Text('Change Password'),
+                child: FutureBuilder<AppUserProfile>(
+                  future: AuthService().currentProfile(),
+                  builder: (context, snapshot) {
+                    final name = snapshot.data?.name.trim().isNotEmpty == true
+                        ? snapshot.data!.name
+                        : 'Pocket Sense User';
+                    final contact =
+                        snapshot.data?.phoneNumber.trim().isNotEmpty == true
+                        ? snapshot.data!.phoneNumber
+                        : snapshot.data?.email ?? '';
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: TextStyle(
+                            color: AppColors.text(context),
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        if (contact.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            contact,
+                            style: TextStyle(
+                              color: AppColors.muted(context),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
                 ),
               ),
             ],
@@ -106,10 +127,10 @@ class SettingsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Budget Setup',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.text(context),
               fontWeight: FontWeight.w900,
               fontSize: 18,
             ),
@@ -140,10 +161,10 @@ class SettingsScreen extends StatelessWidget {
   ) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(label, style: const TextStyle(color: Colors.white)),
+      title: Text(label, style: TextStyle(color: AppColors.text(context))),
       subtitle: Text(
         'BDT ${value.toStringAsFixed(0)}',
-        style: const TextStyle(color: Colors.white54),
+        style: TextStyle(color: AppColors.muted(context)),
       ),
       trailing: const Icon(Icons.edit_rounded),
       onTap: () => _showNumberSheet(context, '$label budget', value, onSave),
@@ -155,13 +176,16 @@ class SettingsScreen extends StatelessWidget {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: const Icon(Icons.calendar_month_rounded, color: _gold),
-        title: const Text(
+        title: Text(
           'Previous Records',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+          style: TextStyle(
+            color: AppColors.text(context),
+            fontWeight: FontWeight.w900,
+          ),
         ),
-        subtitle: const Text(
+        subtitle: Text(
           'Open calendar and view short daily history',
-          style: TextStyle(color: Colors.white54),
+          style: TextStyle(color: AppColors.muted(context)),
         ),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: () => _showCalendarHistory(context, provider),
@@ -170,18 +194,21 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _alarmCard(BuildContext context, ExpenseProvider provider) {
-    final alarm = provider.dailyAlarmTime;
+    final alarm = provider.dailyNotificationTime;
     return _glass(
       child: ListTile(
         contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.alarm_rounded, color: _gold),
-        title: const Text(
-          'Daily Alarm',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+        leading: const Icon(Icons.notifications_active_rounded, color: _gold),
+        title: Text(
+          'Daily Notification Time',
+          style: TextStyle(
+            color: AppColors.text(context),
+            fontWeight: FontWeight.w900,
+          ),
         ),
         subtitle: Text(
           alarm == null ? 'Not set' : alarm.format(context),
-          style: const TextStyle(color: Colors.white54),
+          style: TextStyle(color: AppColors.muted(context)),
         ),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: () async {
@@ -189,21 +216,21 @@ class SettingsScreen extends StatelessWidget {
             context: context,
             initialTime: alarm ?? TimeOfDay.now(),
           );
-          await provider.setDailyAlarm(picked);
+          await provider.setDailyNotificationTime(picked);
         },
       ),
     );
   }
 
-  Widget _themeCard(ExpenseProvider provider) {
+  Widget _themeCard(BuildContext context, ExpenseProvider provider) {
     return _glass(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Theme',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.text(context),
               fontWeight: FontWeight.w900,
               fontSize: 18,
             ),
@@ -281,124 +308,166 @@ class SettingsScreen extends StatelessWidget {
   void _showCalendarHistory(
     BuildContext context,
     ExpenseProvider provider,
-  ) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
-    );
-    if (picked == null || !context.mounted) return;
-    final records = provider.expensesOn(picked);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF08110E),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              DateFormat('EEEE, MMM d, yyyy').format(picked),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 20,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Total: BDT ${provider.spentOn(picked).toStringAsFixed(0)}',
-              style: const TextStyle(color: _gold),
-            ),
-            const SizedBox(height: 14),
-            if (records.isEmpty)
-              const Text(
-                'No records found',
-                style: TextStyle(color: Colors.white54),
-              )
-            else
-              ...records.map(
-                (expense) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    expense.title,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  subtitle: Text(
-                    expense.category,
-                    style: const TextStyle(color: Colors.white54),
-                  ),
-                  trailing: Text(
-                    'BDT ${expense.amount.toStringAsFixed(0)}',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
+  ) {
+    DateTime focusedDay = DateTime.now();
+    DateTime? selectedDay = DateTime.now();
 
-  void _showPasswordSheet(BuildContext context) {
-    final controller = TextEditingController();
-    final auth = AuthService();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF08110E),
-      builder: (context) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          20,
-          20,
-          MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Change Password',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: controller,
-              obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(hintText: 'New password'),
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () async {
-                  final ok = await auth.changePassword(controller.text);
-                  if (!context.mounted) return;
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        ok
-                            ? 'Password changed'
-                            : 'Login recently and try again.',
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final records = provider.expensesOn(selectedDay!);
+            return FractionallySizedBox(
+              heightFactor: 0.85,
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TableCalendar(
+                    firstDay: DateTime(2020),
+                    lastDay: DateTime(2035),
+                    focusedDay: focusedDay,
+                    selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+                    onDaySelected: (selected, focused) {
+                      setState(() {
+                        selectedDay = selected;
+                        focusedDay = focused;
+                      });
+                    },
+                    eventLoader: (day) {
+                      return provider.expensesOn(day);
+                    },
+                    calendarStyle: const CalendarStyle(
+                      markerDecoration: BoxDecoration(
+                        color: _gold,
+                        shape: BoxShape.circle,
+                      ),
+                      defaultTextStyle: TextStyle(color: Colors.white),
+                      weekendTextStyle: TextStyle(color: Colors.white70),
+                      outsideTextStyle: TextStyle(color: Colors.white38),
+                      selectedDecoration: BoxDecoration(
+                        color: _gold,
+                        shape: BoxShape.circle,
+                      ),
+                      selectedTextStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                      todayDecoration: BoxDecoration(
+                        color: Colors.white24,
+                        shape: BoxShape.circle,
                       ),
                     ),
-                  );
-                },
-                child: const Text('Update Password'),
+                    headerStyle: const HeaderStyle(
+                      formatButtonVisible: false,
+                      titleCentered: true,
+                      titleTextStyle: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      leftChevronIcon: Icon(Icons.chevron_left, color: Colors.white),
+                      rightChevronIcon: Icon(Icons.chevron_right, color: Colors.white),
+                    ),
+                    daysOfWeekStyle: const DaysOfWeekStyle(
+                      weekdayStyle: TextStyle(color: Colors.white),
+                      weekendStyle: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  const Divider(color: Colors.white12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          DateFormat('MMM d, yyyy').format(selectedDay!),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'Total: BDT ${provider.spentOn(selectedDay!).toStringAsFixed(0)}',
+                          style: const TextStyle(color: _gold, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: records.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No records found',
+                              style: TextStyle(color: Colors.white54),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            itemCount: records.length,
+                            itemBuilder: (context, index) {
+                              final expense = records[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(
+                                    expense.title,
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                  subtitle: Text(
+                                    expense.category,
+                                    style: const TextStyle(color: Colors.white54),
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (expense.voucherUrl != null)
+                                        const Padding(
+                                          padding: EdgeInsets.only(right: 8.0),
+                                          child: Icon(Icons.image_rounded, color: _gold, size: 20),
+                                        ),
+                                      Text(
+                                        'BDT ${expense.amount.toStringAsFixed(0)}',
+                                        style: const TextStyle(color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                  onTap: expense.voucherUrl == null
+                                      ? null
+                                      : () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) => Dialog(
+                                              backgroundColor: Colors.transparent,
+                                              child: Stack(
+                                                alignment: Alignment.topRight,
+                                                children: [
+                                                  ClipRRect(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                    child: Image.network(expense.voucherUrl!),
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                                                    onPressed: () => Navigator.pop(context),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 

@@ -16,6 +16,7 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
@@ -27,6 +28,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -35,9 +37,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _create() async {
     final email = _emailController.text.trim();
     if (_nameController.text.trim().isEmpty ||
+        _phoneController.text.trim().length < 6 ||
         !_isEmail(email) ||
         _passwordController.text.length < 6) {
-      _message('Name, valid email and minimum 6 digit password required.');
+      _message(
+        'Name, phone, valid email and minimum 6 digit password required.',
+      );
       return;
     }
     setState(() => _loading = true);
@@ -45,6 +50,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       email,
       _passwordController.text,
       name: _nameController.text.trim(),
+      phoneNumber: _phoneController.text.trim(),
     );
     if (!mounted) return;
     setState(() => _loading = false);
@@ -66,23 +72,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool _isEmail(String value) {
     return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value);
-  }
-
-  Future<void> _googleSignIn() async {
-    setState(() => _loading = true);
-    final ok = await _authService.signInGoogleOrLocal();
-    if (!mounted) return;
-    setState(() => _loading = false);
-    if (!ok) {
-      _message('Google sign in cancelled.');
-      return;
-    }
-    await context.read<ExpenseProvider>().reconnectCloudSync();
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const MainScreen()),
-    );
   }
 
   @override
@@ -151,6 +140,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                             const SizedBox(height: 14),
                             _field(
+                              _phoneController,
+                              'Phone number',
+                              Icons.phone_rounded,
+                              keyboardType: TextInputType.phone,
+                            ),
+                            const SizedBox(height: 14),
+                            _field(
                               _passwordController,
                               'Password',
                               Icons.lock_rounded,
@@ -189,31 +185,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 56,
-                              child: OutlinedButton.icon(
-                                onPressed: _loading ? null : _googleSignIn,
-                                style: OutlinedButton.styleFrom(
-                                  side: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.35),
-                                  ),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                ),
-                                icon: const Text(
-                                  'G',
-                                  style: TextStyle(
-                                    color: _gold,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                label: const Text('Continue with Google'),
                               ),
                             ),
                           ],

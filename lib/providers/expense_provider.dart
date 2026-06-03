@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/budget_engine.dart';
 import '../core/health_score.dart';
@@ -8,7 +8,8 @@ import '../core/prediction_engine.dart';
 import '../models/debt_entry.dart';
 import '../models/expense.dart';
 import '../models/goal.dart';
-import '../services/firestore_service.dart';
+import '../services/cloudinary_service.dart';
+import '../services/notification_service.dart';
 
 class ExpenseProvider extends ChangeNotifier {
   List<Expense> _expenses = [];
@@ -30,34 +31,31 @@ class ExpenseProvider extends ChangeNotifier {
     'Health',
     'Others',
   ];
-  final FirestoreService _firestoreService = FirestoreService();
-  StreamSubscription<List<Expense>>? _expenseSubscription;
-  StreamSubscription<List<DebtEntry>>? _debtSubscription;
+  final CloudinaryService _cloudinaryService = CloudinaryService();
   bool _isCloudConnected = false;
-  String _smartTip = 'Track today clearly and keep spending under control.';
+  String _smartTip = '';
   String _themeMode = 'default';
   double _monthlyBudget = 30000;
   double _dailyBudget = 1000;
   double _weeklyBudget = 7000;
   double _yearlyBudget = 360000;
-  TimeOfDay? _dailyAlarmTime;
+  TimeOfDay? _dailyNotificationTime;
 
   List<Expense> get expenses => _expenses;
   List<DebtEntry> get debts => _debts;
   List<Goal> get goals => _goals;
   List<String> get budgetCategories => List.unmodifiable(_budgetCategories);
-  bool get isCloudConnected => _isCloudConnected;
+  bool get isCloudConnected =>
+      _isCloudConnected || _cloudinaryService.isConfigured;
   String get smartTip => _smartTip;
   String get themeMode => _themeMode;
   double get monthlyBudget => _monthlyBudget;
   double get dailyBudget => _dailyBudget;
   double get weeklyBudget => _weeklyBudget;
   double get yearlyBudget => _yearlyBudget;
-  TimeOfDay? get dailyAlarmTime => _dailyAlarmTime;
-  double get dynamicDailyLimit => BudgetEngine.dynamicDailyLimit(
-    expenses: _expenses,
-    monthlyBudget: _monthlyBudget,
-  );
+  TimeOfDay? get dailyNotificationTime => _dailyNotificationTime;
+  TimeOfDay? get dailyAlarmTime => _dailyNotificationTime;
+  double get dynamicDailyLimit => _dailyBudget;
   double get todaySpent => BudgetEngine.todaySpent(_expenses);
   double get predictedMonthlyBill =>
       PredictionEngine.predictedMonthlyBill(_expenses);
@@ -73,6 +71,14 @@ class ExpenseProvider extends ChangeNotifier {
     final now = DateTime.now();
     return _expenses
         .where((e) => e.date.year == now.year && e.date.month == now.month)
+        .fold(0, (sum, item) => sum + item.amount);
+  }
+
+  double get thisWeekSpent {
+    final now = DateTime.now();
+    final startOfWeek = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+    return _expenses
+        .where((e) => e.date.isAfter(startOfWeek.subtract(const Duration(seconds: 1))))
         .fold(0, (sum, item) => sum + item.amount);
   }
 
@@ -100,34 +106,12 @@ class ExpenseProvider extends ChangeNotifier {
 
   ExpenseProvider() {
     _loadExpenses();
-    _connectCloudSync();
+    _isCloudConnected = _cloudinaryService.isConfigured;
   }
 
-  Future<void> reconnectCloudSync() => _connectCloudSync();
-
-  Future<void> _connectCloudSync() async {
-    try {
-      await _expenseSubscription?.cancel();
-      await _debtSubscription?.cancel();
-      _expenseSubscription = _firestoreService.getExpenses().listen((
-        cloudExpenses,
-      ) {
-        if (cloudExpenses.isEmpty) return;
-        _isCloudConnected = true;
-        _expenses = cloudExpenses;
-        _saveExpenses();
-        notifyListeners();
-      });
-      _debtSubscription = _firestoreService.getDebts().listen((cloudDebts) {
-        if (cloudDebts.isEmpty) return;
-        _isCloudConnected = true;
-        _debts = cloudDebts;
-        _saveExpenses();
-        notifyListeners();
-      });
-    } catch (_) {
-      _isCloudConnected = false;
-    }
+  Future<void> reconnectCloudSync() async {
+    _isCloudConnected = _cloudinaryService.isConfigured;
+    notifyListeners();
   }
 
   Future<void> _loadExpenses() async {
@@ -142,10 +126,17 @@ class ExpenseProvider extends ChangeNotifier {
       _weeklyBudget = prefs.getDouble('weekly_budget') ?? _weeklyBudget;
       _yearlyBudget = prefs.getDouble('yearly_budget') ?? _yearlyBudget;
       _themeMode = prefs.getString('theme_mode') ?? _themeMode;
-      final alarmHour = prefs.getInt('daily_alarm_hour');
-      final alarmMinute = prefs.getInt('daily_alarm_minute');
+      final alarmHour =
+          prefs.getInt('daily_notification_hour') ??
+          prefs.getInt('daily_alarm_hour');
+      final alarmMinute =
+          prefs.getInt('daily_notification_minute') ??
+          prefs.getInt('daily_alarm_minute');
       if (alarmHour != null && alarmMinute != null) {
-        _dailyAlarmTime = TimeOfDay(hour: alarmHour, minute: alarmMinute);
+        _dailyNotificationTime = TimeOfDay(
+          hour: alarmHour,
+          minute: alarmMinute,
+        );
       }
       if (expensesString != null) {
         final List<dynamic> decoded = json.decode(expensesString);
@@ -191,9 +182,15 @@ class ExpenseProvider extends ChangeNotifier {
     await prefs.setDouble('weekly_budget', _weeklyBudget);
     await prefs.setDouble('yearly_budget', _yearlyBudget);
     await prefs.setString('theme_mode', _themeMode);
-    if (_dailyAlarmTime != null) {
-      await prefs.setInt('daily_alarm_hour', _dailyAlarmTime!.hour);
-      await prefs.setInt('daily_alarm_minute', _dailyAlarmTime!.minute);
+    if (_dailyNotificationTime != null) {
+      await prefs.setInt(
+        'daily_notification_hour',
+        _dailyNotificationTime!.hour,
+      );
+      await prefs.setInt(
+        'daily_notification_minute',
+        _dailyNotificationTime!.minute,
+      );
     }
   }
 
@@ -224,8 +221,13 @@ class ExpenseProvider extends ChangeNotifier {
   }
 
   Future<void> setDailyAlarm(TimeOfDay? value) async {
-    _dailyAlarmTime = value;
+    await setDailyNotificationTime(value);
+  }
+
+  Future<void> setDailyNotificationTime(TimeOfDay? value) async {
+    _dailyNotificationTime = value;
     await _saveExpenses();
+    await NotificationService.instance.scheduleDaily(value);
     notifyListeners();
   }
 
@@ -242,33 +244,37 @@ class ExpenseProvider extends ChangeNotifier {
     double amount,
     String category, {
     DateTime? date,
+    XFile? voucherImage,
   }) async {
+    final upload = voucherImage == null
+        ? null
+        : await _cloudinaryService.uploadImage(
+            voucherImage,
+            folder: 'pocket_sense/vouchers',
+          );
     final newExpense = Expense(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
       amount: amount,
       category: category,
       date: date ?? DateTime.now(),
+      voucherUrl: upload?.secureUrl,
+      voucherPublicId: upload?.publicId,
     );
     _expenses.insert(0, newExpense);
     await _saveExpenses();
-    try {
-      await _firestoreService.addExpense(newExpense);
-      _isCloudConnected = true;
-    } catch (_) {
-      _isCloudConnected = false;
-    }
+    _isCloudConnected = upload != null || _cloudinaryService.isConfigured;
     notifyListeners();
     _refreshSmartTip();
   }
 
   void _refreshSmartTip() {
     if (todaySpent > dynamicDailyLimit) {
-      _smartTip = 'Today limit crossed. Keep the next spending small.';
+      _smartTip = '';
     } else if (financialHealthScore >= 80) {
-      _smartTip = 'Good pace. You are protecting this month budget.';
+      _smartTip = '';
     } else {
-      _smartTip = 'Log every expense today to keep the dashboard accurate.';
+      _smartTip = '';
     }
   }
 
@@ -276,24 +282,26 @@ class ExpenseProvider extends ChangeNotifier {
     String id,
     String title,
     double amount,
-    String category,
-  ) async {
+    String category, {
+    XFile? voucherImage,
+  }) async {
     final index = _expenses.indexWhere((e) => e.id == id);
     if (index != -1) {
-      _expenses[index] = Expense(
-        id: id,
+      final upload = voucherImage == null
+          ? null
+          : await _cloudinaryService.uploadImage(
+              voucherImage,
+              folder: 'pocket_sense/vouchers',
+            );
+      _expenses[index] = _expenses[index].copyWith(
         title: title,
         amount: amount,
         category: category,
-        date: _expenses[index].date,
+        voucherUrl: upload?.secureUrl,
+        voucherPublicId: upload?.publicId,
       );
       await _saveExpenses();
-      try {
-        await _firestoreService.updateExpense(_expenses[index]);
-        _isCloudConnected = true;
-      } catch (_) {
-        _isCloudConnected = false;
-      }
+      _isCloudConnected = upload != null || _cloudinaryService.isConfigured;
       notifyListeners();
     }
   }
@@ -301,12 +309,6 @@ class ExpenseProvider extends ChangeNotifier {
   Future<void> deleteExpense(String id) async {
     _expenses.removeWhere((expense) => expense.id == id);
     await _saveExpenses();
-    try {
-      await _firestoreService.deleteExpense(id);
-      _isCloudConnected = true;
-    } catch (_) {
-      _isCloudConnected = false;
-    }
     notifyListeners();
     _refreshSmartTip();
   }
@@ -329,12 +331,6 @@ class ExpenseProvider extends ChangeNotifier {
     );
     _debts.insert(0, debt);
     await _saveExpenses();
-    try {
-      await _firestoreService.setDebt(debt);
-      _isCloudConnected = true;
-    } catch (_) {
-      _isCloudConnected = false;
-    }
     notifyListeners();
   }
 
@@ -343,12 +339,6 @@ class ExpenseProvider extends ChangeNotifier {
     if (index == -1) return;
     _debts[index] = _debts[index].copyWith(settled: true);
     await _saveExpenses();
-    try {
-      await _firestoreService.setDebt(_debts[index]);
-      _isCloudConnected = true;
-    } catch (_) {
-      _isCloudConnected = false;
-    }
     notifyListeners();
   }
 
@@ -356,12 +346,5 @@ class ExpenseProvider extends ChangeNotifier {
     _debts.removeWhere((debt) => debt.id == id);
     await _saveExpenses();
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _expenseSubscription?.cancel();
-    _debtSubscription?.cancel();
-    super.dispose();
   }
 }

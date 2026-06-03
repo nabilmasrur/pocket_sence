@@ -163,43 +163,6 @@ Widget buildDivider(String text) {
   );
 }
 
-Widget buildGoogleButton({bool isFullWidth = false, VoidCallback? onTap}) {
-  return InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(16),
-    child: Container(
-      width: isFullWidth ? double.infinity : null,
-      height: 54,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      alignment: Alignment.center,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            'G',
-            style: TextStyle(
-              color: Colors.blue,
-              fontWeight: FontWeight.w900,
-              fontSize: 20,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            isFullWidth ? 'Continue with Google' : 'Google',
-            style: const TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
 Widget buildBiometricButton({VoidCallback? onTap}) {
   return InkWell(
     onTap: onTap,

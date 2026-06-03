@@ -60,23 +60,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _googleSignIn() async {
-    setState(() => _loading = true);
-    final ok = await _authService.signInGoogleOrLocal();
-    if (!mounted) return;
-    setState(() => _loading = false);
-    if (!ok) {
-      _message('Google sign in cancelled.');
-      return;
-    }
-    await context.read<ExpenseProvider>().reconnectCloudSync();
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const MainScreen()),
-    );
-  }
-
   Future<void> _resetPassword() async {
     final sent = await _authService.sendPasswordReset(
       _emailController.text.trim(),
@@ -173,31 +156,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: OutlinedButton.icon(
-                              onPressed: _loading ? null : _googleSignIn,
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(
-                                  color: Colors.white.withValues(alpha: 0.35),
-                                ),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                              ),
-                              icon: const Text(
-                                'G',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  color: _gold,
-                                ),
-                              ),
-                              label: const Text('Continue with Google'),
                             ),
                           ),
                           const SizedBox(height: 24),

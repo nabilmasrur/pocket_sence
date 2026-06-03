@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_colors.dart';
 import '../providers/expense_provider.dart';
 
 class LoansScreen extends StatelessWidget {
@@ -31,10 +32,10 @@ class LoansScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Loans & Debts',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.text(context),
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                   ),
@@ -54,6 +55,7 @@ class LoansScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: _summary(
+                    context,
                     'To collect',
                     'BDT ${receivable.toStringAsFixed(0)}',
                     Icons.south_west_rounded,
@@ -63,6 +65,7 @@ class LoansScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _summary(
+                    context,
                     'To pay',
                     'BDT ${payable.toStringAsFixed(0)}',
                     Icons.north_east_rounded,
@@ -72,25 +75,25 @@ class LoansScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Active Records',
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.text(context),
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 12),
             if (active.isEmpty)
-              _empty('No active loan/debt records')
+              _empty(context, 'No active loan/debt records')
             else
               ...active.map((debt) => _debtTile(context, provider, debt)),
             if (settled.isNotEmpty) ...[
               const SizedBox(height: 22),
-              const Text(
+              Text(
                 'Settled',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.text(context),
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                 ),
@@ -104,25 +107,31 @@ class LoansScreen extends StatelessWidget {
     );
   }
 
-  Widget _summary(String label, String value, IconData icon, Color color) {
+  Widget _summary(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: AppColors.cardSoft(context),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: color),
           const SizedBox(height: 12),
-          Text(label, style: const TextStyle(color: Colors.white54)),
+          Text(label, style: TextStyle(color: AppColors.muted(context))),
           FittedBox(
             child: Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: AppColors.text(context),
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
               ),
@@ -133,20 +142,20 @@ class LoansScreen extends StatelessWidget {
     );
   }
 
-  Widget _empty(String text) {
+  Widget _empty(BuildContext context, String text) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppColors.cardSoft(context),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppColors.border(context)),
       ),
-      child: Text(text, style: const TextStyle(color: Colors.white54)),
+      child: Text(text, style: TextStyle(color: AppColors.muted(context))),
     );
   }
 
-  Widget _debtTile(BuildContext context, ExpenseProvider provider, debt) {
+  Widget _debtTile(BuildContext context, ExpenseProvider provider, dynamic debt) {
     final color = debt.theyOweMe
         ? const Color(0xFF35E6A8)
         : const Color(0xFFFF8A3D);
@@ -168,9 +177,9 @@ class LoansScreen extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: debt.settled ? 0.035 : 0.06),
+          color: AppColors.cardSoft(context),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: AppColors.border(context)),
         ),
         child: Row(
           children: [
@@ -190,8 +199,8 @@ class LoansScreen extends StatelessWidget {
                 children: [
                   Text(
                     debt.person,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: AppColors.text(context),
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
                     ),
@@ -199,7 +208,7 @@ class LoansScreen extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     debt.note,
-                    style: const TextStyle(color: Colors.white54),
+                    style: TextStyle(color: AppColors.muted(context)),
                   ),
                   if (debt.reminderAt != null) ...[
                     const SizedBox(height: 4),
@@ -216,8 +225,8 @@ class LoansScreen extends StatelessWidget {
               children: [
                 Text(
                   'BDT ${debt.amount.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.text(context),
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -241,13 +250,15 @@ class LoansScreen extends StatelessWidget {
     final person = TextEditingController();
     final amount = TextEditingController();
     final note = TextEditingController();
+    final isLight = provider.themeMode == 'light';
+    final sheetColor = isLight ? Colors.white : const Color(0xFF08110E);
     var theyOweMe = true;
     DateTime? reminder;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF08110E),
+      backgroundColor: sheetColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -264,38 +275,39 @@ class LoansScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Add Loan / Debt',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.text(context),
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 16),
-                _field(person, 'Person name', Icons.person_rounded),
+                _field(context, person, 'Person name', Icons.person_rounded),
                 const SizedBox(height: 10),
                 _field(
+                  context,
                   amount,
                   'Amount',
                   Icons.payments_rounded,
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 10),
-                _field(note, 'Note', Icons.notes_rounded),
+                _field(context, note, 'Note', Icons.notes_rounded),
                 SwitchListTile(
                   value: theyOweMe,
                   contentPadding: EdgeInsets.zero,
                   activeThumbColor: _gold,
-                  title: const Text(
+                  title: Text(
                     'They owe me',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: AppColors.text(context)),
                   ),
                   subtitle: Text(
                     theyOweMe
                         ? 'You need to collect this'
                         : 'You need to pay this',
-                    style: const TextStyle(color: Colors.white54),
+                    style: TextStyle(color: AppColors.muted(context)),
                   ),
                   onChanged: (value) => setSheetState(() => theyOweMe = value),
                 ),
@@ -306,8 +318,8 @@ class LoansScreen extends StatelessWidget {
                     reminder == null
                         ? 'Set reminder alarm'
                         : DateFormat('MMM d, yyyy - h:mm a').format(reminder!),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: AppColors.text(context),
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -354,8 +366,10 @@ class LoansScreen extends StatelessWidget {
                       if (context.mounted) Navigator.pop(context);
                     },
                     style: FilledButton.styleFrom(
-                      backgroundColor: _gold,
-                      foregroundColor: Colors.black,
+                      backgroundColor: isLight
+                          ? const Color(0xFF2563EB)
+                          : _gold,
+                      foregroundColor: isLight ? Colors.white : Colors.black,
                     ),
                     icon: const Icon(Icons.check_rounded),
                     label: const Text(
@@ -373,6 +387,7 @@ class LoansScreen extends StatelessWidget {
   }
 
   Widget _field(
+    BuildContext context,
     TextEditingController controller,
     String hint,
     IconData icon, {
@@ -381,12 +396,15 @@ class LoansScreen extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+      style: TextStyle(
+        color: AppColors.text(context),
+        fontWeight: FontWeight.w800,
+      ),
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: Icon(icon, color: _gold),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.07),
+        fillColor: AppColors.cardSoft(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'providers/expense_provider.dart';
+import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
+import 'services/auth_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +14,11 @@ void main() async {
     await Firebase.initializeApp();
   } catch (_) {
     // The app still runs locally when Firebase config is not present yet.
+  }
+  try {
+    await NotificationService.instance.initialize();
+  } catch (e) {
+    debugPrint('Notification initialization failed (likely on Web): $e');
   }
 
   runApp(
@@ -35,7 +43,7 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(
             brightness: light ? Brightness.light : Brightness.dark,
             scaffoldBackgroundColor: light
-                ? const Color(0xFFF5F6F0)
+                ? Colors.white
                 : const Color(0xFF020502),
             fontFamily: 'Inter',
             useMaterial3: true,
@@ -44,8 +52,28 @@ class MyApp extends StatelessWidget {
               border: InputBorder.none,
             ),
           ),
-          home: const LoginScreen(),
+          home: const AuthGate(),
         );
+      },
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: AuthService().isSignedIn(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            backgroundColor: AppTheme.ink,
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return snapshot.data == true ? const MainScreen() : const LoginScreen();
       },
     );
   }

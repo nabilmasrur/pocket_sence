@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_colors.dart';
 import '../models/expense.dart';
 import '../providers/expense_provider.dart';
 
@@ -20,7 +21,6 @@ class _StatsScreenState extends State<StatsScreen> {
   double lineZoom = 1;
 
   static const _gold = Color(0xFFFFD21F);
-  static const _panel = Color(0xFF08110E);
 
   @override
   Widget build(BuildContext context) {
@@ -35,29 +35,28 @@ class _StatsScreenState extends State<StatsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(
+            Center(
               child: Text(
                 'Smart Statistics',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white,
+                  color: AppColors.text(context),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            _predictionCard(provider),
             const SizedBox(height: 18),
             _lineCard(provider.expenses),
             const SizedBox(height: 18),
             _pieCard(categoryTotals),
             const SizedBox(height: 22),
-            const Text(
+            Text(
               'Top Categories',
               style: TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.w900,
-                color: Colors.white,
+                color: AppColors.text(context),
               ),
             ),
             const SizedBox(height: 16),
@@ -65,7 +64,7 @@ class _StatsScreenState extends State<StatsScreen> {
               Text(
                 'No spending data yet',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.48),
+                  color: AppColors.muted(context),
                   fontWeight: FontWeight.w600,
                 ),
               )
@@ -85,127 +84,129 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _predictionCard(ExpenseProvider provider) {
-    return _glass(
-      child: Row(
-        children: [
-          const CircleAvatar(
-            backgroundColor: _gold,
-            child: Icon(Icons.insights_rounded, color: Colors.black),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Predicted Monthly Bill',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.48),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  'BDT ${provider.predictedMonthlyBill.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 22,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${provider.financialHealthScore}/100',
-            style: const TextStyle(color: _gold, fontWeight: FontWeight.w900),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _lineCard(List<Expense> expenses) {
     final spots = _dailySpots(expenses);
     final maxY = spots.map((spot) => spot.y).fold<double>(100, max);
 
-    return GestureDetector(
-      onScaleUpdate: (details) {
-        setState(() => lineZoom = (lineZoom * details.scale).clamp(0.75, 2.5));
-      },
-      child: _glass(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Zoomable Spending Curve',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                  ),
+    return _glass(
+      context,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Monthly Spending Trend',
+                style: TextStyle(
+                  color: AppColors.text(context),
+                  fontWeight: FontWeight.w900,
                 ),
-                Text(
-                  '${lineZoom.toStringAsFixed(1)}x',
-                  style: const TextStyle(
-                    color: _gold,
-                    fontWeight: FontWeight.w900,
-                  ),
+              ),
+              Text(
+                'Day vs amount',
+                style: TextStyle(
+                  color: AppColors.muted(context),
+                  fontWeight: FontWeight.w900,
                 ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              height: 190,
-              child: LineChart(
-                LineChartData(
-                  minX: max(1, 31 - (30 / lineZoom)),
-                  maxX: 31,
-                  minY: 0,
-                  maxY: maxY * 1.25,
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    getDrawingHorizontalLine: (_) =>
-                        FlLine(color: Colors.white12, strokeWidth: 1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 190,
+            child: LineChart(
+              LineChartData(
+                minX: max(1, 31 - (30 / lineZoom)),
+                maxX: 31,
+                minY: 0,
+                maxY: maxY * 1.25,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: AppColors.border(context), strokeWidth: 1),
+                ),
+                titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
                   ),
-                  titlesData: const FlTitlesData(show: false),
-                  borderData: FlBorderData(show: false),
-                  lineTouchData: LineTouchData(
-                    enabled: true,
-                    touchCallback: (_, response) {
-                      if (response?.lineBarSpots?.isNotEmpty == true) {
-                        HapticFeedback.selectionClick();
-                      }
-                    },
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
                   ),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      barWidth: 4,
-                      color: _gold,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            _gold.withValues(alpha: 0.28),
-                            _gold.withValues(alpha: 0.02),
-                          ],
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 42,
+                      getTitlesWidget: (value, meta) => Text(
+                        value.toInt().toString(),
+                        style: TextStyle(
+                          color: AppColors.muted(context),
+                          fontSize: 10,
                         ),
                       ),
                     ),
-                  ],
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 5,
+                      getTitlesWidget: (value, meta) => Text(
+                        value.toInt().toString(),
+                        style: TextStyle(
+                          color: AppColors.muted(context),
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
+                borderData: FlBorderData(show: false),
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (touchedSpot) => AppColors.card(context),
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        return LineTooltipItem(
+                          'Day ${spot.x.toInt()}\nBDT ${spot.y.toStringAsFixed(0)}',
+                          TextStyle(color: AppColors.text(context), fontWeight: FontWeight.bold),
+                        );
+                      }).toList();
+                    },
+                  ),
+                  touchCallback: (_, response) {
+                    if (response?.lineBarSpots?.isNotEmpty == true) {
+                      HapticFeedback.selectionClick();
+                    }
+                  },
+                ),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    barWidth: 4,
+                    color: AppColors.accent(context),
+                    dotData: const FlDotData(show: true),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.accent(context).withValues(alpha: 0.25),
+                          AppColors.accent(context).withValues(alpha: 0.02),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -215,12 +216,16 @@ class _StatsScreenState extends State<StatsScreen> {
     final total = entries.fold<double>(0, (sum, entry) => sum + entry.value);
 
     return _glass(
+      context,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Tappable Category Pie',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+          Text(
+            'Category Share',
+            style: TextStyle(
+              color: AppColors.text(context),
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -229,9 +234,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 ? Center(
                     child: Text(
                       'Add expenses to unlock chart',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.48),
-                      ),
+                      style: TextStyle(color: AppColors.muted(context)),
                     ),
                   )
                 : PieChart(
@@ -273,8 +276,8 @@ class _StatsScreenState extends State<StatsScreen> {
             Center(
               child: Text(
                 '${entries[touchedPie].key}: BDT ${entries[touchedPie].value.toStringAsFixed(0)}',
-                style: const TextStyle(
-                  color: _gold,
+                style: TextStyle(
+                  color: AppColors.accent(context),
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -341,16 +344,16 @@ class _StatsScreenState extends State<StatsScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppColors.text(context),
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     Text(
                       'BDT ${amount.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppColors.text(context),
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                       ),
@@ -363,7 +366,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: 7,
-                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                    backgroundColor: AppColors.border(context),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ),
@@ -375,14 +378,14 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _glass({required Widget child}) {
+  Widget _glass(BuildContext context, {required Widget child}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _panel.withValues(alpha: 0.76),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
             color: _gold.withValues(alpha: 0.06),
@@ -406,7 +409,7 @@ class _StatsScreenState extends State<StatsScreen> {
       case 'Bills':
         return Icons.receipt_long_rounded;
       default:
-        return Icons.savings_rounded;
+        return Icons.category_rounded;
     }
   }
 

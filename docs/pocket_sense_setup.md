@@ -100,6 +100,29 @@ flutter run --dart-define=GEMINI_API_KEY=YOUR_KEY
 
 Without a key, the app uses an offline Bangla parser fallback.
 
+## Cloudinary
+
+Pocket Sense uploads profile photos and expense vouchers to Cloudinary.
+
+Configured values:
+
+```text
+CLOUDINARY_CLOUD_NAME=drzgoh1li
+CLOUDINARY_UPLOAD_PRESET=pocket_sense_unsigned
+```
+
+Run with:
+
+```powershell
+flutter run --dart-define=CLOUDINARY_CLOUD_NAME=drzgoh1li --dart-define=CLOUDINARY_UPLOAD_PRESET=pocket_sense_unsigned
+```
+
+Build with:
+
+```powershell
+flutter build apk --debug --dart-define=CLOUDINARY_CLOUD_NAME=drzgoh1li --dart-define=CLOUDINARY_UPLOAD_PRESET=pocket_sense_unsigned
+```
+
 ## Android Firebase Config
 
 Place Firebase config here:

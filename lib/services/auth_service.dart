@@ -1,13 +1,28 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class AppUserProfile {
+  final String uid;
+  final String name;
+  final String email;
+  final String phoneNumber;
+  final String? photoUrl;
+  final DateTime createdAt;
+
+  const AppUserProfile({
+    required this.uid,
+    required this.name,
+    required this.email,
+    required this.phoneNumber,
+    required this.createdAt,
+    this.photoUrl,
+  });
+}
+
 class AuthService {
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
   final LocalAuthentication _localAuth = LocalAuthentication();
 
   FirebaseAuth? get _auth {
@@ -33,11 +48,11 @@ class AuthService {
           email: email,
           password: password,
         );
-        await _ensureUserDocument(credential.user);
+        await _saveProfile(credential.user);
         return true;
       } catch (e) {
         debugPrint("Email Sign-In Error: $e");
-        return false;
+        // Fallback to local
       }
     }
 
@@ -53,6 +68,7 @@ class AuthService {
     String email,
     String password, {
     String? name,
+    String? phoneNumber,
   }) async {
     final auth = _auth;
     if (auth != null) {
@@ -64,48 +80,25 @@ class AuthService {
         if (name != null && name.trim().isNotEmpty) {
           await credential.user?.updateDisplayName(name.trim());
         }
-        await _ensureUserDocument(credential.user);
+        await _saveProfile(credential.user, phoneNumber: phoneNumber);
         return true;
       } catch (e) {
         debugPrint("Email Sign-Up Error: $e");
-        return false;
+        // Fallback to local
       }
     }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('local_user_name', name?.trim() ?? 'Nabil');
     await prefs.setString('local_user_email', email);
+    await prefs.setString('profile_phone', phoneNumber?.trim() ?? '');
     await prefs.setString('local_user_password', password);
-    await prefs.setBool('local_signed_in', true);
-    return true;
-  }
-
-  Future<bool> signInGoogleOrLocal() async {
-    final auth = _auth;
-    if (auth != null) {
-      try {
-        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-        if (googleUser == null) return false;
-
-        final GoogleSignInAuthentication googleAuth =
-            await googleUser.authentication;
-        final AuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-
-        final userCredential = await auth.signInWithCredential(credential);
-        await _ensureUserDocument(userCredential.user);
-        return true;
-      } catch (e) {
-        debugPrint("Google Sign-In Error: $e");
-        return false;
-      }
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('local_user_name', 'Google User');
-    await prefs.setString('local_user_email', 'google.local@pocketsense.app');
+    await prefs.setString('local_user_uid', 'local-email-user');
+    await prefs.setString(
+      'local_user_created_at',
+      prefs.getString('local_user_created_at') ??
+          DateTime.now().toIso8601String(),
+    );
     await prefs.setBool('local_signed_in', true);
     return true;
   }
@@ -129,6 +122,7 @@ class AuthService {
     String email,
     String password, {
     String? name,
+    String? phoneNumber,
   }) async {
     final auth = _auth;
     if (auth == null) return null;
@@ -141,7 +135,7 @@ class AuthService {
       if (name != null && name.trim().isNotEmpty) {
         await credential.user?.updateDisplayName(name.trim());
       }
-      await _ensureUserDocument(credential.user);
+      await _saveProfile(credential.user, phoneNumber: phoneNumber);
       return credential;
     } catch (e) {
       debugPrint("Email Sign-Up Error: $e");
@@ -149,35 +143,11 @@ class AuthService {
     }
   }
 
-  // Google Sign In
-  Future<UserCredential?> signInWithGoogle() async {
-    final auth = _auth;
-    if (auth == null) return null;
-
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await auth.signInWithCredential(credential);
-      await _ensureUserDocument(userCredential.user);
-      return userCredential;
-    } catch (e) {
-      debugPrint("Google Sign-In Error: $e");
-      return null;
-    }
-  }
-
   // Sign Out
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
     await _auth?.signOut();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('local_signed_in', false);
   }
 
   Future<bool> sendPasswordReset(String email) async {
@@ -204,19 +174,105 @@ class AuthService {
     }
   }
 
-  Future<void> _ensureUserDocument(User? user) async {
-    if (user == null || Firebase.apps.isEmpty) return;
-    try {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'uid': user.uid,
-        'email': user.email,
-        'displayName': user.displayName,
-        'currency': 'BDT',
-        'updatedAt': FieldValue.serverTimestamp(),
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    } catch (e) {
-      debugPrint("User document error: $e");
+  Future<bool> isSignedIn() async {
+    if (_auth?.currentUser != null) return true;
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('local_signed_in') ?? false;
+  }
+
+  Future<AppUserProfile> currentProfile() async {
+    final user = _auth?.currentUser;
+    final prefs = await SharedPreferences.getInstance();
+    if (user != null) {
+      return AppUserProfile(
+        uid: user.uid,
+        name:
+            user.displayName ??
+            prefs.getString('profile_name') ??
+            user.email?.split('@').first ??
+            'Pocket Sense User',
+        email: prefs.getString('profile_email') ?? user.email ?? '',
+        phoneNumber: user.phoneNumber ?? prefs.getString('profile_phone') ?? '',
+        photoUrl: user.photoURL ?? prefs.getString('profile_photo_url'),
+        createdAt:
+            DateTime.tryParse(prefs.getString('profile_created_at') ?? '') ??
+            user.metadata.creationTime ??
+            DateTime.now(),
+      );
+    }
+
+    final createdAt =
+        DateTime.tryParse(prefs.getString('local_user_created_at') ?? '') ??
+        DateTime.now();
+    return AppUserProfile(
+      uid: prefs.getString('local_user_uid') ?? 'local-user',
+      name: prefs.getString('local_user_name') ?? 'Pocket Sense User',
+      email: prefs.getString('local_user_email') ?? '',
+      phoneNumber: prefs.getString('profile_phone') ?? '',
+      photoUrl: prefs.getString('profile_photo_url'),
+      createdAt: createdAt,
+    );
+  }
+
+  Future<void> updateProfilePhoto(String photoUrl) async {
+    final user = _auth?.currentUser;
+    await user?.updatePhotoURL(photoUrl);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('profile_photo_url', photoUrl);
+  }
+
+  Future<void> updateProfile({
+    required String name,
+    required String email,
+    required String phoneNumber,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final trimmedName = name.trim();
+    final trimmedEmail = email.trim();
+    final trimmedPhone = phoneNumber.trim();
+    final user = _auth?.currentUser;
+
+    if (user != null) {
+      if (trimmedName.isNotEmpty) {
+        await user.updateDisplayName(trimmedName);
+      }
+      if (trimmedEmail.isNotEmpty && trimmedEmail != user.email) {
+        await user.verifyBeforeUpdateEmail(trimmedEmail);
+      }
+      await prefs.setString('profile_name', trimmedName);
+      await prefs.setString('profile_email', trimmedEmail);
+      await prefs.setString('profile_phone', trimmedPhone);
+      return;
+    }
+
+    await prefs.setString('local_user_name', trimmedName);
+    await prefs.setString('local_user_email', trimmedEmail);
+    await prefs.setString('profile_phone', trimmedPhone);
+  }
+
+  Future<void> _saveProfile(User? user, {String? phoneNumber}) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (user == null) {
+      await prefs.setString('local_user_uid', 'local-user');
+      await prefs.setString(
+        'local_user_created_at',
+        DateTime.now().toIso8601String(),
+      );
+      return;
+    }
+    await prefs.setString('profile_name', user.displayName ?? '');
+    await prefs.setString('profile_email', user.email ?? '');
+    if (phoneNumber != null) {
+      await prefs.setString('profile_phone', phoneNumber.trim());
+    }
+    await prefs.setString(
+      'profile_created_at',
+      prefs.getString('profile_created_at') ??
+          user.metadata.creationTime?.toIso8601String() ??
+          DateTime.now().toIso8601String(),
+    );
+    if (user.photoURL != null) {
+      await prefs.setString('profile_photo_url', user.photoURL!);
     }
   }
 
