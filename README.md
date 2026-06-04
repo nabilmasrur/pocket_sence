@@ -28,13 +28,21 @@
 - **Local Auth:** local_auth
 
 ## 📸 Screenshots
-<img width="608" height="1280" alt="image" src="https://github.com/user-attachments/assets/ae532dd5-9189-40a0-a19a-7ca6f70ec950" />
-<img width="608" height="1280" alt="image" src="https://github.com/user-attachments/assets/6f9075f3-f404-4c25-b0b2-949fbb5fd9fd" />
-<img width="608" height="1280" alt="image" src="https://github.com/user-attachments/assets/e5b70577-6347-44b1-a588-406de16db371" />
-<img width="608" height="1280" alt="image" src="https://github.com/user-attachments/assets/0ef0fcab-b043-4bc9-ac97-57f7eec6950f" />
-<img width="608" height="1280" alt="image" src="https://github.com/user-attachments/assets/9b0b0187-fd8e-4da2-9a25-b38360ccef36" />
-<img width="608" height="1280" alt="image" src="https://github.com/user-attachments/assets/76ce5815-4394-46dd-a7bc-8aac3c30f0b5" />
 
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="https://github.com/user-attachments/assets/ae532dd5-9189-40a0-a19a-7ca6f70ec950" width="250" alt="Screenshot 1"></td>
+      <td><img src="https://github.com/user-attachments/assets/6f9075f3-f404-4c25-b0b2-949fbb5fd9fd" width="250" alt="Screenshot 2"></td>
+      <td><img src="https://github.com/user-attachments/assets/e5b70577-6347-44b1-a588-406de16db371" width="250" alt="Screenshot 3"></td>
+    </tr>
+    <tr>
+      <td><img src="https://github.com/user-attachments/assets/0ef0fcab-b043-4bc9-ac97-57f7eec6950f" width="250" alt="Screenshot 4"></td>
+      <td><img src="https://github.com/user-attachments/assets/9b0b0187-fd8e-4da2-9a25-b38360ccef36" width="250" alt="Screenshot 5"></td>
+      <td><img src="https://github.com/user-attachments/assets/76ce5815-4394-46dd-a7bc-8aac3c30f0b5" width="250" alt="Screenshot 6"></td>
+    </tr>
+  </table>
+</div>
 
 ## 📦 Getting Started
 
@@ -44,21 +52,5 @@
 
 ### Installation
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/nabilmasrur/pocket_sence.git
-   ```
-2. Navigate to the project directory:
-   ```bash
-   cd pocket_sence
-   ```
-3. Install dependencies:
-   ```bash
-   flutter pub get
-   ```
-4. Run the app:
-   ```bash
-   flutter run
-   ```
-
-## 🤝 Contributing
-Contributions, issues and feature requests are welcome! Feel free to check [issues page](https://github.com/nabilmasrur/pocket_sence/issues).
+```bash
+   git clone [https://github.com/nabilmasrur/pocket_sense.git](https://github.com/nabilmasrur/pocket_sense.git)
